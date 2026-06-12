@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Microphone Access</title>
+    <style>
+      :root {
+        --bg: #121318;
+        --panel: #1b1d24;
+        --text: #e9e9ee;
+        --muted: #9a9aa6;
+        --accent: #5b8cff;
+        --border: #2f3240;
+        --ok: #5bd98a;
+        --error: #ff6b6b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+      }
+      main {
+        width: min(560px, 100%);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px;
+      }
+      h1 { margin: 0 0 10px; font-size: 18px; }
+      p { margin: 0 0 14px; color: var(--muted); line-height: 1.45; }
+      button {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.55; cursor: not-allowed; }
+      #status { margin-top: 12px; font-size: 13px; color: var(--muted); }
+      .ok { color: var(--ok); }
+      .error { color: var(--error); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Allow microphone access</h1>
+      <p>
+        Click the button below, then allow microphone access in the browser prompt.
+        After success, return to the extension side panel and press Start again.
+      </p>
+      <button id="grant" type="button">Request microphone permission</button>
+      <div id="status">Waiting for action...</div>
+    </main>
+    <script type="module" src="mic-permission.js"></script>
+  </body>
+</html>

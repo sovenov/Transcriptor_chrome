@@ -1,0 +1,14 @@
+{
+  "name": "trans_criptirator",
+  "version": "0.2.0",
+  "description": "Chrome MV3 extension for microphone speech-to-text via Web Speech API",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

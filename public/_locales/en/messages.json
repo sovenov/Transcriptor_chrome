@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "Transcriptor"
+  },
+  "extDescription": {
+    "message": "Microphone speech-to-text in side panel via Web Speech API."
+  },
+  "actionOpenPanel": {
+    "message": "Open Transcriptor panel"
+  }
+}
