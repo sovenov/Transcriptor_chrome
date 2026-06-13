@@ -84,16 +84,7 @@ h1 {
   padding: 6px 8px;
 }
 
-.controls {
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-  min-width: 0;
-}
-
-.sessions {
+.settings {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -119,6 +110,25 @@ h1 {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-group:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.settings-subtitle {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 .session-tabs {
@@ -259,15 +269,6 @@ textarea {
 .inline-check input[type="checkbox"] {
   margin: 0;
   accent-color: var(--accent);
-}
-
-.llm {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
 }
 
 .llm-response {

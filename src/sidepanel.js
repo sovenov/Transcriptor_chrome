@@ -2,6 +2,7 @@
 const els = {
   uiLang: $("uiLang"),
   status: $("status"),
+  settingsTitle: $("settingsTitle"),
   sessionsTitle: $("sessionsTitle"),
   inputTitle: $("inputTitle"),
   llmTitle: $("llmTitle"),
@@ -20,6 +21,8 @@ const els = {
   clear: $("clear"),
   storageUsage: $("storageUsage"),
   grantAccess: $("grantAccess"),
+  toggleSettings: $("toggleSettings"),
+  settingsBody: $("settingsBody"),
   toggleSessions: $("toggleSessions"),
   sessionsBody: $("sessionsBody"),
   sessionTabs: $("sessionTabs"),
@@ -97,8 +100,9 @@ const UI_TEXT = {
     start: "Старт",
     stop: "Стоп",
     allowMicrophoneAccess: "Разрешить доступ к микрофону",
+    settings: "Настройки",
     sessions: "Сессии",
-    input: "Ввод",
+    input: "Динамик-микрофон",
     llm: "LLM",
     show: "Показать",
     hide: "Скрыть",
@@ -177,6 +181,7 @@ const UI_TEXT = {
     appliedElementsDetails: " ({applied} элементов)",
     meetingTranscriptPrefix: "Meeting transcript",
     copiedPromptAndSession: "Промпт + сессия скопированы в буфер обмена.",
+    copiedSession: "Сессия скопирована в буфер обмена.",
     storageUsage: "занято памяти {used}/{total}mb",
     initializationFailed: "Ошибка инициализации: {error}",
   },
@@ -185,8 +190,9 @@ const UI_TEXT = {
     start: "Start",
     stop: "Stop",
     allowMicrophoneAccess: "Allow microphone access",
+    settings: "Settings",
     sessions: "Sessions",
-    input: "Input",
+    input: "Mic-Speaker",
     llm: "LLM",
     show: "Show",
     hide: "Hide",
@@ -265,6 +271,7 @@ const UI_TEXT = {
     appliedElementsDetails: " ({applied} elements)",
     meetingTranscriptPrefix: "Meeting transcript",
     copiedPromptAndSession: "Prompt and session were copied to clipboard.",
+    copiedSession: "Session was copied to clipboard.",
     storageUsage: "storage used {used}/{total}mb",
     initializationFailed: "Initialization failed: {error}",
   },
@@ -303,6 +310,7 @@ function applyInterfaceLanguage() {
   els.start.textContent = t("start");
   els.stop.textContent = t("stop");
   els.grantAccess.textContent = t("allowMicrophoneAccess");
+  els.settingsTitle.textContent = t("settings");
   els.sessionsTitle.textContent = t("sessions");
   els.inputTitle.textContent = t("input");
   els.llmTitle.textContent = t("llm");
@@ -327,6 +335,7 @@ function applyInterfaceLanguage() {
   if (ruOpt) ruOpt.textContent = t("langRu");
   if (enOpt) enOpt.textContent = t("langEn");
 
+  updateSettingsVisibility();
   updateSessionsVisibility();
   updateControlsVisibility();
   updateLlmVisibility();
@@ -400,8 +409,8 @@ els.clear.addEventListener("click", () => {
   renderTranscript();
 });
 els.copy.addEventListener("click", () => {
-  navigator.clipboard.writeText(asPromptAndTranscriptText());
-  setStatus("active", t("copiedPromptAndSession"));
+  navigator.clipboard.writeText(asText());
+  setStatus("active", t("copiedSession"));
 });
 els.exportTxt.addEventListener("click", () => {
   const blob = new Blob([asText()], { type: "text/plain;charset=utf-8" });
@@ -424,6 +433,11 @@ els.newSession.addEventListener("click", () => {
 els.deleteSession.addEventListener("click", () => {
   deleteActiveSession();
 });
+els.toggleSettings.addEventListener("click", () => {
+  state.settingsVisible = !state.settingsVisible;
+  persistState();
+  updateSettingsVisibility();
+});
 els.toggleSessions.addEventListener("click", () => {
   state.sessionsVisible = !state.sessionsVisible;
   persistState();
@@ -441,6 +455,8 @@ els.toggleLlm.addEventListener("click", () => {
 });
 els.outputDevice.addEventListener("change", () => {
   state.outputSinkId = els.outputDevice.value;
+  const selectedOption = els.outputDevice.selectedOptions[0];
+  state.outputSinkLabel = state.outputSinkId ? selectedOption?.textContent || "" : "";
   persistState();
   applyOutputDeviceToCurrentTab().catch((err) => {
     setStatus("error", t("cannotApplyOutputDevice", { error: err?.message || String(err) }));
@@ -515,8 +531,9 @@ function loadState() {
 function ensureStateShape() {
   const hadLayoutVersion = typeof state.layoutVersion === "number";
   if (!hadLayoutVersion) {
-    state.sessionsVisible = false;
-    state.controlsVisible = false;
+    state.settingsVisible = false;
+    state.sessionsVisible = true;
+    state.controlsVisible = true;
     state.llmVisible = false;
     state.llmSettingsVisible = false;
     state.llmResponseVisible = false;
@@ -529,6 +546,7 @@ function ensureStateShape() {
   state.uiLang = state.uiLang === "en" ? "en" : "ru";
   state.lang = state.lang === "en-US" ? "en-US" : "ru-RU";
   state.outputSinkId = typeof state.outputSinkId === "string" ? state.outputSinkId : "";
+  state.outputSinkLabel = typeof state.outputSinkLabel === "string" ? state.outputSinkLabel : "";
   state.llmEndpoint =
     typeof state.llmEndpoint === "string" && state.llmEndpoint.trim()
       ? state.llmEndpoint.trim()
@@ -545,10 +563,12 @@ function ensureStateShape() {
   ) {
     state.llmPrompt = DEFAULT_LLM_PROMPT;
   }
+  state.settingsVisible =
+    typeof state.settingsVisible === "boolean" ? state.settingsVisible : false;
   state.sessionsVisible =
-    typeof state.sessionsVisible === "boolean" ? state.sessionsVisible : false;
+    typeof state.sessionsVisible === "boolean" ? state.sessionsVisible : true;
   state.controlsVisible =
-    typeof state.controlsVisible === "boolean" ? state.controlsVisible : false;
+    typeof state.controlsVisible === "boolean" ? state.controlsVisible : true;
   state.llmVisible = typeof state.llmVisible === "boolean" ? state.llmVisible : false;
   state.llmSettingsVisible =
     typeof state.llmSettingsVisible === "boolean" ? state.llmSettingsVisible : false;
@@ -884,7 +904,7 @@ async function refreshOutputDevices({ requestPermission }) {
 }
 
 function renderOutputDevices() {
-  const selected = state.outputSinkId || "";
+  let selected = state.outputSinkId || "";
   els.outputDevice.innerHTML = "";
 
   const defaultOpt = document.createElement("option");
@@ -899,13 +919,28 @@ function renderOutputDevices() {
     els.outputDevice.append(opt);
   }
 
-  const hasSelected =
-    selected === "" || outputDevices.some((device) => device.deviceId === selected);
-  els.outputDevice.value = hasSelected ? selected : "";
-  if (!hasSelected) {
-    state.outputSinkId = "";
-    persistState();
+  if (selected) {
+    let match = outputDevices.find((device) => device.deviceId === selected);
+    // Device ids can rotate between sessions; fall back to matching by label.
+    if (!match && state.outputSinkLabel) {
+      match = outputDevices.find((device) => device.label === state.outputSinkLabel);
+      if (match) {
+        selected = match.deviceId;
+        state.outputSinkId = match.deviceId;
+        persistState();
+      }
+    }
+    // The remembered device may not be enumerated yet (devices not loaded or
+    // microphone permission not granted). Keep the selection instead of wiping it.
+    if (!match) {
+      const opt = document.createElement("option");
+      opt.value = selected;
+      opt.textContent = state.outputSinkLabel || t("selectedDevice");
+      els.outputDevice.append(opt);
+    }
   }
+
+  els.outputDevice.value = selected;
 }
 
 async function applyOutputDeviceToCurrentTab() {
@@ -1045,6 +1080,12 @@ function syncButtons() {
   els.togglePrompt.disabled = sendingToLlm;
   els.toggleLlmResponse.disabled = sendingToLlm;
   els.grantAccess.hidden = !showGrantButton;
+}
+
+function updateSettingsVisibility() {
+  const visible = Boolean(state.settingsVisible);
+  els.settingsBody.hidden = !visible;
+  els.toggleSettings.textContent = visible ? t("hide") : t("show");
 }
 
 function updateSessionsVisibility() {
