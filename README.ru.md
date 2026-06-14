@@ -2,7 +2,8 @@
 
 Расширение Chrome/Edge (Manifest V3) для преобразования речи в текст в боковой панели браузера, на базе Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`).
 
-**🧩 Chrome Web Store:** https://chromewebstore.google.com/detail/transcriptor/fpgdnlmjjocgihdlfkamjogknmbpaoma
+**🧩 Скачать из Chrome Web Store:**
+https://chromewebstore.google.com/detail/transcriptor/fpgdnlmjjocgihdlfkamjogknmbpaoma
 
 **Languages / Языки:** [English](README.md) · Русский
 

@@ -2,7 +2,8 @@
 
 Chrome/Edge Manifest V3 extension for speech-to-text in the browser side panel, powered by the Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`).
 
-**🧩 Chrome Web Store:** https://chromewebstore.google.com/detail/transcriptor/fpgdnlmjjocgihdlfkamjogknmbpaoma
+**🧩 DOWNLOAD FROM Chrome Web Store:**
+https://chromewebstore.google.com/detail/transcriptor/fpgdnlmjjocgihdlfkamjogknmbpaoma
 
 **Languages / Языки:** English · [Русский](README.ru.md)
 
