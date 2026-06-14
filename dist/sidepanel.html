@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transcriptor</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-top">
+        <h1>Transcriptor</h1>
+        <div class="header-buttons">
+          <select id="uiLang" class="ui-lang" aria-label="Interface language">
+            <option value="ru">RU</option>
+            <option value="en">EN</option>
+          </select>
+          <button id="start" type="button">Start</button>
+          <button id="stop" type="button" disabled>Stop</button>
+        </div>
+      </div>
+      <div id="status" class="status status--idle">Ready</div>
+      <button id="grantAccess" type="button" class="grant-access" hidden>
+        Allow microphone access
+      </button>
+    </header>
+
+    <section class="settings">
+      <div class="section-head">
+        <span id="settingsTitle" class="section-title">Settings</span>
+        <button id="toggleSettings" type="button">Show</button>
+      </div>
+      <div id="settingsBody" class="section-body">
+        <div class="settings-group">
+          <div class="section-head">
+            <span id="sessionsTitle" class="settings-subtitle">Sessions</span>
+            <button id="toggleSessions" type="button">Hide</button>
+          </div>
+          <div id="sessionsBody" class="section-body">
+            <div class="session-actions">
+              <button id="newSession" type="button">New session</button>
+              <button id="deleteSession" type="button">Delete session</button>
+            </div>
+            <div id="sessionTabs" class="session-tabs"></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="section-head">
+            <span id="inputTitle" class="settings-subtitle">Input</span>
+            <button id="toggleControls" type="button">Hide</button>
+          </div>
+          <div id="controlsBody" class="section-body">
+            <div class="field-grid">
+              <div class="field">
+                <label id="langLabel" for="lang">Language</label>
+                <select id="lang">
+                  <option value="ru-RU">Russian (ru-RU)</option>
+                  <option value="en-US">English (en-US)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label id="outputDeviceLabel" for="outputDevice">Output device</label>
+                <select id="outputDevice"></select>
+              </div>
+            </div>
+
+            <div class="control-row">
+              <button id="refreshDevices" type="button">Refresh devices</button>
+              <button id="applyOutputDevice" type="button">Apply to current tab</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="section-head">
+            <span id="llmTitle" class="settings-subtitle">LLM</span>
+            <button id="toggleLlm" type="button">Show</button>
+          </div>
+          <div id="llmBody" class="section-body">
+            <div class="control-row">
+              <button id="togglePrompt" type="button">Show LLM settings</button>
+              <button id="toggleLlmResponse" type="button">Hide LLM response</button>
+              <div id="sendToLlmWrap" class="llm-send-wrap">
+                <button id="sendToLlm" type="button">Send session to LLM</button>
+                <div id="llmHotkeyHint" class="llm-hotkey-hint" hidden></div>
+              </div>
+              <label class="inline-check" for="altHotkeysToggle">
+                <input id="altHotkeysToggle" type="checkbox" />
+                <span id="altHotkeysLabel">ALT hotkeys</span>
+              </label>
+            </div>
+            <div id="endpointWrap" class="field" hidden>
+              <label id="llmEndpointLabel" for="llmEndpoint">LLM REST endpoint</label>
+              <input
+                id="llmEndpoint"
+                type="url"
+                placeholder="http://localhost:1234/api/v1/chat"
+                spellcheck="false"
+              />
+            </div>
+            <div id="modelWrap" class="field" hidden>
+              <label id="llmModelLabel" for="llmModel">LLM model</label>
+              <input
+                id="llmModel"
+                type="text"
+                placeholder="google/gemma-4-e2b || openai/gpt-oss-20b || ..."
+                spellcheck="false"
+              />
+            </div>
+            <div id="promptWrap" class="field" hidden>
+              <label id="promptLabel" for="llmPrompt">Prompt template</label>
+              <textarea id="llmPrompt" rows="8" spellcheck="false"></textarea>
+            </div>
+            <pre id="llmResponse" class="llm-response"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="progress" id="progress" hidden></section>
+
+    <section class="transcript">
+      <div class="transcript__toolbar">
+        <span id="partial" class="partial"></span>
+      </div>
+      <div id="output" class="output" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      <div class="footer-actions">
+        <button id="copy" type="button">Copy</button>
+        <button id="exportTxt" type="button">Export .txt</button>
+        <button id="clear" type="button">Clear</button>
+      </div>
+      <div id="storageUsage" class="storage-usage">storage used 0.00/5mb</div>
+    </footer>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>
