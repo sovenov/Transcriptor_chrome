@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Transcriptor"
+    "message": "Transcriptor: live audio to text FREE"
   },
   "extDescription": {
-    "message": "Microphone speech-to-text in side panel via Web Speech API."
+    "message": "Convert browser tab audio to text in the side panel via the Web Speech API. Completely free!"
   },
   "actionOpenPanel": {
     "message": "Open Transcriptor panel"

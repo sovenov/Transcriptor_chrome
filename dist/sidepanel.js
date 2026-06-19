@@ -82,6 +82,8 @@ var LLM_HOTKEY_CODES = /* @__PURE__ */ new Set([
   "Slash"
 ]);
 var LLM_HOTKEY_HINT_DELAY_MS = 3e3;
+var RECOGNITION_IDLE_RESTART_MS = 4e3;
+var SILENT_RESTART_DELAY_MS = 100;
 var LOCAL_STORAGE_CAP_MB = 5;
 var BYTES_IN_MB = 1024 * 1024;
 var STORAGE_STOP_MB = 4.99;
@@ -264,6 +266,9 @@ var outputDevices = [];
 var applyingTabSink = false;
 var sendingToLlm = false;
 var llmHotkeyHintTimer = null;
+var recognitionIdleTimer = null;
+var lastRecognitionTextAt = 0;
+var silentRestartPending = false;
 var showingStorageOverflowAlert = false;
 var interimText = "";
 var state = loadState();
@@ -666,6 +671,7 @@ function createRecognition() {
     starting = false;
     listening = true;
     hideGrantAccessButton();
+    markRecognitionTextActivity();
     setStatus("active", t("listeningToMic"));
     syncButtons();
   };
@@ -683,6 +689,7 @@ function createRecognition() {
     }
     let changed = false;
     let interim = "";
+    const previousInterim = interimText;
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
       const text = (result[0]?.transcript || "").trim();
@@ -701,6 +708,9 @@ function createRecognition() {
       }
     }
     interimText = interim;
+    if (changed || interimText !== previousInterim) {
+      markRecognitionTextActivity();
+    }
     if (changed) {
       persistState();
       if (isStorageOverflowed()) {
@@ -712,6 +722,9 @@ function createRecognition() {
     renderTranscript();
   };
   rec.onerror = (event) => {
+    if (silentRestartPending && (event.error === "aborted" || event.error === "no-speech")) {
+      return;
+    }
     if (event.error === "no-speech") {
       setStatus("active", t("listeningToMic"));
       return;
@@ -728,13 +741,20 @@ function createRecognition() {
     syncButtons();
   };
   rec.onend = () => {
+    const wasSilentRestart = silentRestartPending;
+    silentRestartPending = false;
+    stopRecognitionIdleWatchdog();
     listening = false;
     starting = false;
-    interimText = "";
-    renderTranscript();
+    if (!wasSilentRestart) {
+      interimText = "";
+      renderTranscript();
+    }
     syncButtons();
     if (wantListening) {
-      restartRecognitionSoon();
+      restartRecognitionSoon(wasSilentRestart ? SILENT_RESTART_DELAY_MS : void 0, {
+        silent: wasSilentRestart
+      });
     } else {
       setStatus("idle", t("stopped"));
     }
@@ -753,6 +773,7 @@ async function startListening() {
   if (listening || starting) return;
   wantListening = true;
   starting = true;
+  markRecognitionTextActivity();
   syncButtons();
   setStatus("loading", t("startingRecognition"));
   try {
@@ -776,6 +797,8 @@ async function startListening() {
 function stopListening() {
   wantListening = false;
   starting = false;
+  silentRestartPending = false;
+  stopRecognitionIdleWatchdog();
   interimText = "";
   if (recognition && (listening || starting)) {
     try {
@@ -901,12 +924,52 @@ async function openPermissionPage() {
     setStatus("error", t("cannotOpenPermissionPage", { error: err?.message || String(err) }));
   }
 }
-function restartRecognitionSoon(delayMs = 250) {
-  setStatus("loading", t("reconnectingMic"));
+function markRecognitionTextActivity() {
+  lastRecognitionTextAt = Date.now();
+  scheduleRecognitionIdleWatchdog();
+}
+function scheduleRecognitionIdleWatchdog() {
+  stopRecognitionIdleWatchdog();
+  if (!wantListening || !listening && !starting) return;
+  recognitionIdleTimer = setTimeout(checkRecognitionIdle, RECOGNITION_IDLE_RESTART_MS);
+}
+function stopRecognitionIdleWatchdog() {
+  if (recognitionIdleTimer === null) return;
+  clearTimeout(recognitionIdleTimer);
+  recognitionIdleTimer = null;
+}
+function checkRecognitionIdle() {
+  recognitionIdleTimer = null;
+  if (!wantListening || !listening && !starting || !recognition) return;
+  const idleFor = Date.now() - lastRecognitionTextAt;
+  if (idleFor < RECOGNITION_IDLE_RESTART_MS) {
+    recognitionIdleTimer = setTimeout(
+      checkRecognitionIdle,
+      RECOGNITION_IDLE_RESTART_MS - idleFor
+    );
+    return;
+  }
+  silentRestartRecognition();
+}
+function silentRestartRecognition() {
+  if (!wantListening || !listening && !starting || !recognition) return;
+  silentRestartPending = true;
+  stopRecognitionIdleWatchdog();
+  try {
+    recognition.stop();
+  } catch (err) {
+    silentRestartPending = false;
+    setStatus("error", t("reconnectFailed", { error: err?.message || String(err) }));
+    syncButtons();
+  }
+}
+function restartRecognitionSoon(delayMs = 250, { silent = false } = {}) {
+  if (!silent) setStatus("loading", t("reconnectingMic"));
   setTimeout(() => {
     if (!wantListening || listening || starting || !recognition) return;
     try {
       starting = true;
+      if (silent) markRecognitionTextActivity();
       recognition.lang = state.lang;
       recognition.start();
     } catch (err) {

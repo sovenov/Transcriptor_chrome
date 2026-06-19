@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "Transcriptor"
+    "message": "Transcriptor: live транскриптор аудио в текст бесплатно"
   },
   "extDescription": {
-    "message": "Преобразование речи с микрофона в текст в боковой панели через Web Speech API."
+    "message": "Преобразование аудио с вкладки браузера в текст в боковой панели через Web Speech API. Полностью бесплатно!"
   },
   "actionOpenPanel": {
     "message": "Открыть панель Transcriptor"
