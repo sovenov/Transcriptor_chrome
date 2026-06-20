@@ -1,28 +1,76 @@
 // src/background.js
+var panelWindowId = null;
+var panelTabId = null;
 chrome.action.onClicked.addListener((tab) => {
-  if (!tab?.id) return;
-  chrome.sidePanel.open({ tabId: tab.id }).catch((err) => {
-    console.warn("sidePanel.open failed:", err);
+  openExtensionPanel(tab).catch((err) => {
+    console.warn("open panel failed:", err);
   });
 });
+chrome.windows.onRemoved.addListener((windowId) => {
+  if (windowId === panelWindowId) {
+    panelWindowId = null;
+    panelTabId = null;
+  }
+});
+async function openExtensionPanel(tab) {
+  const tabId = Number.isInteger(tab?.id) ? tab.id : null;
+  const query = tabId === null ? "" : `?tabId=${encodeURIComponent(String(tabId))}`;
+  const url = chrome.runtime.getURL(`sidepanel.html${query}`);
+  if (panelWindowId !== null) {
+    try {
+      await chrome.windows.get(panelWindowId);
+      if (panelTabId !== null) await chrome.tabs.update(panelTabId, { url });
+      await chrome.windows.update(panelWindowId, { focused: true });
+      return;
+    } catch {
+      panelWindowId = null;
+      panelTabId = null;
+    }
+  }
+  try {
+    const win = await chrome.windows.create({
+      url,
+      type: "popup",
+      width: 420,
+      height: 760,
+      focused: true
+    });
+    panelWindowId = win?.id ?? null;
+    panelTabId = win?.tabs?.[0]?.id ?? null;
+  } catch {
+    await chrome.tabs.create({ url });
+  }
+}
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "OPEN_MIC_PERMISSION_PAGE") {
     chrome.tabs.create({ url: chrome.runtime.getURL("mic-permission.html") }).then(() => sendResponse?.({ ok: true })).catch((err) => sendResponse?.({ ok: false, error: err?.message || String(err) }));
     return true;
   }
   if (message?.type === "APPLY_TAB_OUTPUT_DEVICE") {
-    applyOutputDeviceToActiveTab(message.sinkId || "").then((res) => sendResponse?.({ ok: true, ...res })).catch((err) => sendResponse?.({ ok: false, error: err?.message || String(err) }));
+    applyOutputDeviceToTargetTab(message.sinkId || "", message.tabId).then((res) => sendResponse?.({ ok: true, ...res })).catch((err) => sendResponse?.({ ok: false, error: err?.message || String(err) }));
     return true;
   }
   if (message?.type === "GET_TAB_OUTPUT_DEVICES") {
-    getOutputDevicesFromActiveTab(Boolean(message.requestPermission)).then((res) => sendResponse?.({ ok: true, ...res })).catch((err) => sendResponse?.({ ok: false, error: err?.message || String(err) }));
+    getOutputDevicesFromTargetTab(Boolean(message.requestPermission), message.tabId).then((res) => sendResponse?.({ ok: true, ...res })).catch((err) => sendResponse?.({ ok: false, error: err?.message || String(err) }));
     return true;
   }
   return false;
 });
-async function getOutputDevicesFromActiveTab(requestPermission) {
+async function getTargetTab(preferredTabId) {
+  const tabId = Number(preferredTabId);
+  if (Number.isInteger(tabId) && tabId > 0) {
+    try {
+      const tab2 = await chrome.tabs.get(tabId);
+      if (tab2?.id) return tab2;
+    } catch {
+    }
+  }
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (!tab?.id) throw new Error("No active tab.");
+  return tab;
+}
+async function getOutputDevicesFromTargetTab(requestPermission, preferredTabId) {
+  const tab = await getTargetTab(preferredTabId);
   if (!tab.url || !/^https?:\/\//i.test(tab.url)) {
     throw new Error("Only http/https pages are supported.");
   }
@@ -34,9 +82,8 @@ async function getOutputDevicesFromActiveTab(requestPermission) {
   });
   return result || { devices: [] };
 }
-async function applyOutputDeviceToActiveTab(sinkId) {
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  if (!tab?.id) throw new Error("No active tab.");
+async function applyOutputDeviceToTargetTab(sinkId, preferredTabId) {
+  const tab = await getTargetTab(preferredTabId);
   if (!tab.url || !/^https?:\/\//i.test(tab.url)) {
     throw new Error("Only http/https pages are supported.");
   }

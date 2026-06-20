@@ -53,6 +53,7 @@ const els = {
 
 const SpeechRecognitionCtor =
   globalThis.webkitSpeechRecognition || globalThis.SpeechRecognition;
+const TARGET_TAB_ID = getTargetTabIdFromUrl();
 
 const STORAGE_KEY = "trans_criptirator_state_v2";
 const LAYOUT_VERSION = 2;
@@ -88,7 +89,7 @@ const LLM_HOTKEY_CODES = new Set([
   "Slash",
 ]);
 const LLM_HOTKEY_HINT_DELAY_MS = 3000;
-const RECOGNITION_IDLE_RESTART_MS = 4000;
+const RECOGNITION_IDLE_RESTART_MS = 6000;
 const SILENT_RESTART_DELAY_MS = 100;
 const LOCAL_STORAGE_CAP_MB = 5;
 const BYTES_IN_MB = 1024 * 1024;
@@ -909,6 +910,7 @@ async function refreshOutputDevices({ requestPermission }) {
   const res = await chrome.runtime.sendMessage({
     type: "GET_TAB_OUTPUT_DEVICES",
     requestPermission: Boolean(requestPermission),
+    tabId: TARGET_TAB_ID,
   });
   if (!res?.ok) throw new Error(res?.error || t("failedReadOutputDevices"));
   outputDevices = Array.isArray(res.devices) ? res.devices : [];
@@ -979,6 +981,7 @@ async function applyOutputDeviceToCurrentTab() {
     const res = await chrome.runtime.sendMessage({
       type: "APPLY_TAB_OUTPUT_DEVICE",
       sinkId,
+      tabId: TARGET_TAB_ID,
     });
     if (!res?.ok) throw new Error(res?.error || t("failedApplyOutputDevice"));
 
@@ -1016,6 +1019,15 @@ function isSpeakerSelectionBlocked(errorText) {
     txt.includes("permissions policy") ||
     txt.includes("permission policy")
   );
+}
+
+function getTargetTabIdFromUrl() {
+  try {
+    const tabId = Number(new URLSearchParams(location.search).get("tabId"));
+    return Number.isInteger(tabId) && tabId > 0 ? tabId : null;
+  } catch {
+    return null;
+  }
 }
 
 function handleRecognitionStartError(err) {

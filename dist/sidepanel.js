@@ -52,6 +52,7 @@ var els = {
   llmPrompt: $("llmPrompt")
 };
 var SpeechRecognitionCtor = globalThis.webkitSpeechRecognition || globalThis.SpeechRecognition;
+var TARGET_TAB_ID = getTargetTabIdFromUrl();
 var STORAGE_KEY = "trans_criptirator_state_v2";
 var LAYOUT_VERSION = 2;
 var LEGACY_EN_PROMPT = `Create a concise, structured meeting summary from the transcript.
@@ -82,7 +83,7 @@ var LLM_HOTKEY_CODES = /* @__PURE__ */ new Set([
   "Slash"
 ]);
 var LLM_HOTKEY_HINT_DELAY_MS = 3e3;
-var RECOGNITION_IDLE_RESTART_MS = 4e3;
+var RECOGNITION_IDLE_RESTART_MS = 6e3;
 var SILENT_RESTART_DELAY_MS = 100;
 var LOCAL_STORAGE_CAP_MB = 5;
 var BYTES_IN_MB = 1024 * 1024;
@@ -812,7 +813,8 @@ function stopListening() {
 async function refreshOutputDevices({ requestPermission }) {
   const res = await chrome.runtime.sendMessage({
     type: "GET_TAB_OUTPUT_DEVICES",
-    requestPermission: Boolean(requestPermission)
+    requestPermission: Boolean(requestPermission),
+    tabId: TARGET_TAB_ID
   });
   if (!res?.ok) throw new Error(res?.error || t("failedReadOutputDevices"));
   outputDevices = Array.isArray(res.devices) ? res.devices : [];
@@ -872,7 +874,8 @@ async function applyOutputDeviceToCurrentTab() {
     const sinkId = state.outputSinkId || "";
     const res = await chrome.runtime.sendMessage({
       type: "APPLY_TAB_OUTPUT_DEVICE",
-      sinkId
+      sinkId,
+      tabId: TARGET_TAB_ID
     });
     if (!res?.ok) throw new Error(res?.error || t("failedApplyOutputDevice"));
     const label = sinkId ? t("selectedDevice") : t("defaultDevice");
@@ -900,6 +903,14 @@ function isSpeakerSelectionBlocked(errorText) {
   const txt = String(errorText || "").toLowerCase();
   if (!txt) return false;
   return txt.includes("notallowederror") || txt.includes("speaker-selection") || txt.includes("permissions policy") || txt.includes("permission policy");
+}
+function getTargetTabIdFromUrl() {
+  try {
+    const tabId = Number(new URLSearchParams(location.search).get("tabId"));
+    return Number.isInteger(tabId) && tabId > 0 ? tabId : null;
+  } catch {
+    return null;
+  }
 }
 function handleRecognitionStartError(err) {
   const msg = String(err?.message || err || "");
