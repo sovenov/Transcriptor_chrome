@@ -3,9 +3,9 @@
     "message": "Transcriptor: live транскриптор аудио в текст бесплатно"
   },
   "extDescription": {
-    "message": "Преобразование аудио с вкладки браузера в текст в боковой панели через Web Speech API. Полностью бесплатно!"
+    "message": "Преобразование аудио с вкладки браузера в текст через Web Speech API. Полностью бесплатно!"
   },
   "actionOpenPanel": {
-    "message": "Открыть панель Transcriptor"
+    "message": "Открыть Transcriptor"
   }
 }

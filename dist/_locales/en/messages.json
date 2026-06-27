@@ -3,9 +3,9 @@
     "message": "Transcriptor: live audio to text FREE"
   },
   "extDescription": {
-    "message": "Convert browser tab audio to text in the side panel via the Web Speech API. Completely free!"
+    "message": "Convert browser tab audio to text via the Web Speech API. Completely free!"
   },
   "actionOpenPanel": {
-    "message": "Open Transcriptor panel"
+    "message": "Open Transcriptor"
   }
 }

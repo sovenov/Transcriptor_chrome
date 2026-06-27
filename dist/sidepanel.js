@@ -3,15 +3,10 @@ var $ = (id) => document.getElementById(id);
 var els = {
   uiLang: $("uiLang"),
   status: $("status"),
-  settingsTitle: $("settingsTitle"),
   sessionsTitle: $("sessionsTitle"),
   inputTitle: $("inputTitle"),
-  llmTitle: $("llmTitle"),
   langLabel: $("langLabel"),
   outputDeviceLabel: $("outputDeviceLabel"),
-  llmEndpointLabel: $("llmEndpointLabel"),
-  llmModelLabel: $("llmModelLabel"),
-  promptLabel: $("promptLabel"),
   lang: $("lang"),
   start: $("start"),
   stop: $("stop"),
@@ -22,8 +17,6 @@ var els = {
   clear: $("clear"),
   storageUsage: $("storageUsage"),
   grantAccess: $("grantAccess"),
-  toggleSettings: $("toggleSettings"),
-  settingsBody: $("settingsBody"),
   toggleSessions: $("toggleSessions"),
   sessionsBody: $("sessionsBody"),
   sessionTabs: $("sessionTabs"),
@@ -31,58 +24,14 @@ var els = {
   deleteSession: $("deleteSession"),
   toggleControls: $("toggleControls"),
   controlsBody: $("controlsBody"),
-  toggleLlm: $("toggleLlm"),
-  llmBody: $("llmBody"),
   outputDevice: $("outputDevice"),
   applyOutputDevice: $("applyOutputDevice"),
-  refreshDevices: $("refreshDevices"),
-  endpointWrap: $("endpointWrap"),
-  modelWrap: $("modelWrap"),
-  llmEndpoint: $("llmEndpoint"),
-  llmModel: $("llmModel"),
-  sendToLlmWrap: $("sendToLlmWrap"),
-  sendToLlm: $("sendToLlm"),
-  llmHotkeyHint: $("llmHotkeyHint"),
-  altHotkeysToggle: $("altHotkeysToggle"),
-  altHotkeysLabel: $("altHotkeysLabel"),
-  toggleLlmResponse: $("toggleLlmResponse"),
-  llmResponse: $("llmResponse"),
-  togglePrompt: $("togglePrompt"),
-  promptWrap: $("promptWrap"),
-  llmPrompt: $("llmPrompt")
+  refreshDevices: $("refreshDevices")
 };
 var SpeechRecognitionCtor = globalThis.webkitSpeechRecognition || globalThis.SpeechRecognition;
 var TARGET_TAB_ID = getTargetTabIdFromUrl();
 var STORAGE_KEY = "trans_criptirator_state_v2";
 var LAYOUT_VERSION = 2;
-var LEGACY_EN_PROMPT = `Create a concise, structured meeting summary from the transcript.
-
-Output sections:
-1) Meeting topic (1-2 sentences).
-2) Key questions raised (bullet list).
-3) Decisions made / agreements (bullet list).
-4) Open questions and risks (if any).
-5) Next steps (who / what / when, if available).
-6) End with your own improvement ideas (3-5 bullets).
-
-Keep it short and practical. If data is missing, explicitly say what is missing.
-If the transcript is mostly Russian, answer in Russian. If mostly English, answer in English.`;
-var LEGACY_RU_PROMPT = "\u0421\u0434\u0435\u043B\u0430\u0439 \u043A\u0440\u0430\u0442\u043A\u0438\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437 \u0432\u0441\u0442\u0440\u0435\u0447\u0438 \u043F\u043E \u044D\u0442\u043E\u043C\u0443 \u0442\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442\u0443.\n\n\u0422\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F \u043A \u043E\u0442\u0432\u0435\u0442\u0443:\n1) \u0422\u0435\u043C\u0430 \u0432\u0441\u0442\u0440\u0435\u0447\u0438 (1-2 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F).\n2) \u041A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u043F\u043E\u0434\u043D\u0438\u043C\u0430\u043B\u0438\u0441\u044C (\u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0441\u043F\u0438\u0441\u043E\u043A).\n3) \u0427\u0442\u043E \u0440\u0435\u0448\u0438\u043B\u0438 / \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0438\u043B\u0438\u0441\u044C (\u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0441\u043F\u0438\u0441\u043E\u043A).\n4) \u041E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u0438 \u0440\u0438\u0441\u043A\u0438 (\u0435\u0441\u043B\u0438 \u0435\u0441\u0442\u044C).\n5) \u041A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0435 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0435 \u0448\u0430\u0433\u0438 (\u043A\u0442\u043E/\u0447\u0442\u043E/\u043A\u043E\u0433\u0434\u0430, \u0435\u0441\u043B\u0438 \u044D\u0442\u043E \u043C\u043E\u0436\u043D\u043E \u0432\u044B\u0432\u0435\u0441\u0442\u0438 \u0438\u0437 \u0442\u0435\u043A\u0441\u0442\u0430).\n6) \u0412 \u043A\u043E\u043D\u0446\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0438 \u0441\u0432\u043E\u0438 \u0438\u0434\u0435\u0438 \u043F\u043E \u0443\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u044E \u043E\u0431\u0441\u0443\u0436\u0434\u0430\u0435\u043C\u043E\u0433\u043E \u0440\u0435\u0448\u0435\u043D\u0438\u044F (3-5 \u043F\u0443\u043D\u043A\u0442\u043E\u0432).\n\n\u041F\u0438\u0448\u0438 \u043A\u0440\u0430\u0442\u043A\u043E, \u043F\u043E \u0434\u0435\u043B\u0443, \u0431\u0435\u0437 \u0432\u043E\u0434\u044B. \u0415\u0441\u043B\u0438 \u0432 \u0442\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442\u0435 \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445, \u044F\u0432\u043D\u043E \u0443\u043A\u0430\u0436\u0438 \u044D\u0442\u043E.";
-var DEFAULT_LLM_PROMPT = "\u0421\u0434\u0435\u043B\u0430\u0439 \u043A\u0440\u0430\u0442\u043A\u0438\u0439 \u0441\u0442\u0440\u0443\u043A\u0442\u0443\u0440\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u043F\u0435\u0440\u0435\u0441\u043A\u0430\u0437 \u0432\u0441\u0442\u0440\u0435\u0447\u0438 \u043F\u043E \u044D\u0442\u043E\u043C\u0443 \u0442\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442\u0443.\n\n\u0422\u0440\u0435\u0431\u043E\u0432\u0430\u043D\u0438\u044F \u043A \u043E\u0442\u0432\u0435\u0442\u0443:\n1) \u0422\u0435\u043C\u0430 \u0432\u0441\u0442\u0440\u0435\u0447\u0438 (1-2 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0435\u043D\u0438\u044F).\n2) \u041A\u043B\u044E\u0447\u0435\u0432\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B, \u043A\u043E\u0442\u043E\u0440\u044B\u0435 \u043F\u043E\u0434\u043D\u0438\u043C\u0430\u043B\u0438\u0441\u044C (\u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0441\u043F\u0438\u0441\u043E\u043A).\n3) \u0427\u0442\u043E \u0440\u0435\u0448\u0438\u043B\u0438 / \u0434\u043E\u0433\u043E\u0432\u043E\u0440\u0438\u043B\u0438\u0441\u044C (\u043C\u0430\u0440\u043A\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0439 \u0441\u043F\u0438\u0441\u043E\u043A).\n4) \u041E\u0442\u043A\u0440\u044B\u0442\u044B\u0435 \u0432\u043E\u043F\u0440\u043E\u0441\u044B \u0438 \u0440\u0438\u0441\u043A\u0438 (\u0435\u0441\u043B\u0438 \u0435\u0441\u0442\u044C).\n5) \u041A\u043E\u043D\u043A\u0440\u0435\u0442\u043D\u044B\u0435 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0435 \u0448\u0430\u0433\u0438 (\u043A\u0442\u043E/\u0447\u0442\u043E/\u043A\u043E\u0433\u0434\u0430, \u0435\u0441\u043B\u0438 \u044D\u0442\u043E \u043C\u043E\u0436\u043D\u043E \u0432\u044B\u0432\u0435\u0441\u0442\u0438 \u0438\u0437 \u0442\u0435\u043A\u0441\u0442\u0430).\n6) \u0412 \u043A\u043E\u043D\u0446\u0435 \u043F\u0440\u0435\u0434\u043B\u043E\u0436\u0438 \u0441\u0432\u043E\u0438 \u0438\u0434\u0435\u0438 \u043F\u043E \u0443\u043B\u0443\u0447\u0448\u0435\u043D\u0438\u044E \u043E\u0431\u0441\u0443\u0436\u0434\u0430\u0435\u043C\u043E\u0433\u043E \u0440\u0435\u0448\u0435\u043D\u0438\u044F (3-5 \u043F\u0443\u043D\u043A\u0442\u043E\u0432).\n\n\u041F\u0438\u0448\u0438 \u043A\u0440\u0430\u0442\u043A\u043E, \u043F\u043E \u0434\u0435\u043B\u0443, \u0431\u0435\u0437 \u0432\u043E\u0434\u044B. \u0415\u0441\u043B\u0438 \u0432 \u0442\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442\u0435 \u043D\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445, \u044F\u0432\u043D\u043E \u0443\u043A\u0430\u0436\u0438 \u044D\u0442\u043E.\n\n\u0412 \u0441\u0430\u043C\u043E\u043C \u043D\u0430\u0447\u0430\u043B\u0435 \u0441\u0440\u0430\u0437\u0443 \u043D\u0430\u043F\u0438\u0448\u0438 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0439 \u0432\u043E\u043F\u0440\u043E\u0441 \u0438\u043B\u0438 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0435\u0435 \u043F\u0440\u0438\u043D\u044F\u0442\u043E\u0435 \u0440\u0435\u0448\u0435\u043D\u0438\u0435. \u041A\u0440\u0430\u0442\u043A\u043E.";
-var LEGACY_RU_PROMPT_NO_FINAL_DOT = DEFAULT_LLM_PROMPT.replace(/\.$/, "");
-var LLM_HOTKEY_CODES = /* @__PURE__ */ new Set([
-  "KeyZ",
-  "KeyX",
-  "KeyC",
-  "KeyV",
-  "KeyB",
-  "KeyN",
-  "KeyM",
-  "Comma",
-  "Period",
-  "Slash"
-]);
-var LLM_HOTKEY_HINT_DELAY_MS = 3e3;
 var RECOGNITION_IDLE_RESTART_MS = 6e3;
 var SILENT_RESTART_DELAY_MS = 100;
 var LOCAL_STORAGE_CAP_MB = 5;
@@ -96,10 +45,8 @@ var UI_TEXT = {
     start: "\u0421\u0442\u0430\u0440\u0442",
     stop: "\u0421\u0442\u043E\u043F",
     allowMicrophoneAccess: "\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u043A \u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D\u0443",
-    settings: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
     sessions: "\u0421\u0435\u0441\u0441\u0438\u0438",
     input: "\u0414\u0438\u043D\u0430\u043C\u0438\u043A-\u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D",
-    llm: "LLM",
     show: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C",
     hide: "\u0421\u043A\u0440\u044B\u0442\u044C",
     newSession: "\u041D\u043E\u0432\u0430\u044F \u0441\u0435\u0441\u0441\u0438\u044F",
@@ -111,16 +58,6 @@ var UI_TEXT = {
     sessionBase: "\u0421\u0435\u0441\u0441\u0438\u044F",
     applyToCurrentTab: "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u043A \u0442\u0435\u043A\u0443\u0449\u0435\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0435",
     refreshDevices: "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430",
-    llmEndpoint: "LLM REST endpoint",
-    llmModel: "LLM model",
-    showLlmSettings: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C LLM \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
-    hideLlmSettings: "\u0421\u043A\u0440\u044B\u0442\u044C LLM \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438",
-    showLlmResponse: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u043E\u0442\u0432\u0435\u0442 LLM",
-    hideLlmResponse: "\u0421\u043A\u0440\u044B\u0442\u044C \u043E\u0442\u0432\u0435\u0442 LLM",
-    sendSessionToLlm: "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0441\u0435\u0441\u0441\u0438\u044E \u0432 LLM",
-    altHotkeys: "ALT hotkeys",
-    llmHotkeyHint: "\u041C\u043E\u0436\u043D\u043E \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C \u0438 \u0433\u043E\u0440\u044F\u0447\u0438\u043C\u0438 \u043A\u043B\u0430\u0432\u0438\u0448\u0430\u043C\u0438: Alt+Z, Alt+X, Alt+C, Alt+V, Alt+B, Alt+N, Alt+M, Alt+<, Alt+>, Alt+?. \u0420\u0430\u0431\u043E\u0442\u0430\u044E\u0442 \u043B\u0435\u0432\u044B\u0439 \u0438 \u043F\u0440\u0430\u0432\u044B\u0439 Alt. \u0414\u043B\u044F \u044D\u0442\u043E\u0433\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u0435 ALT hotkeys.",
-    promptTemplate: "\u0428\u0430\u0431\u043B\u043E\u043D \u043F\u0440\u043E\u043C\u043F\u0442\u0430",
     copy: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C",
     exportTxt: "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 .txt",
     clear: "\u041E\u0447\u0438\u0441\u0442\u0438\u0442\u044C",
@@ -134,7 +71,6 @@ var UI_TEXT = {
     startingRecognition: "\u0417\u0430\u043F\u0443\u0441\u043A\u0430\u044E \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u0435 \u0440\u0435\u0447\u0438...",
     cannotApplyOutputDevice: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C \u0432\u044B\u0445\u043E\u0434\u043D\u043E\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E: {error}",
     cannotRefreshOutputDevices: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0432\u044B\u0445\u043E\u0434\u043D\u044B\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430: {error}",
-    llmRequestFailed: "LLM \u0437\u0430\u043F\u0440\u043E\u0441 \u043D\u0435 \u0443\u0434\u0430\u043B\u0441\u044F: {error}",
     switchingLanguage: "\u041F\u0435\u0440\u0435\u043A\u043B\u044E\u0447\u0430\u044E \u044F\u0437\u044B\u043A \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u044F \u043D\u0430 {lang}...",
     failedReadOutputDevices: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u044C \u0441\u043F\u0438\u0441\u043E\u043A \u0432\u044B\u0445\u043E\u0434\u043D\u044B\u0445 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432.",
     outputDevicesLimitedByPermission: "\u0421\u043F\u0438\u0441\u043E\u043A \u0432\u044B\u0445\u043E\u0434\u043E\u0432 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0435\u043D: {error}. \u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u0435 \u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D \u0434\u043B\u044F \u044D\u0442\u043E\u0439 \u0432\u043A\u043B\u0430\u0434\u043A\u0438 \u0438 \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u0435 \u0441\u043F\u0438\u0441\u043E\u043A.",
@@ -160,16 +96,8 @@ var UI_TEXT = {
     noSpeechDetected: "\u0420\u0435\u0447\u044C \u043D\u0435 \u043E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430.",
     recognitionAborted: "\u0420\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u0435 \u043F\u0440\u0435\u0440\u0432\u0430\u043D\u043E.",
     speechRecognitionError: "\u041E\u0448\u0438\u0431\u043A\u0430 \u0440\u0430\u0441\u043F\u043E\u0437\u043D\u0430\u0432\u0430\u043D\u0438\u044F \u0440\u0435\u0447\u0438: {code}",
-    setLlmEndpointFirst: "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 LLM endpoint.",
-    setLlmModelFirst: "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 LLM model.",
-    sessionTranscriptEmpty: "\u0422\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442 \u0441\u0435\u0441\u0441\u0438\u0438 \u043F\u0443\u0441\u0442\u043E\u0439.",
-    sendingTranscriptToLlm: "\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u044E \u0442\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442 \u0432 LLM...",
-    transcriptSentToLlm: "\u0422\u0440\u0430\u043D\u0441\u043A\u0440\u0438\u043F\u0442 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u0432 LLM.",
-    emptyResponse: "(\u043F\u0443\u0441\u0442\u043E\u0439 \u043E\u0442\u0432\u0435\u0442)",
     appliedAndFailedDetails: " ({applied} \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u043E, {failed} \u0441 \u043E\u0448\u0438\u0431\u043A\u043E\u0439)",
     appliedElementsDetails: " ({applied} \u044D\u043B\u0435\u043C\u0435\u043D\u0442\u043E\u0432)",
-    meetingTranscriptPrefix: "Meeting transcript",
-    copiedPromptAndSession: "\u041F\u0440\u043E\u043C\u043F\u0442 + \u0441\u0435\u0441\u0441\u0438\u044F \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u044B \u0432 \u0431\u0443\u0444\u0435\u0440 \u043E\u0431\u043C\u0435\u043D\u0430.",
     copiedSession: "\u0421\u0435\u0441\u0441\u0438\u044F \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430 \u0432 \u0431\u0443\u0444\u0435\u0440 \u043E\u0431\u043C\u0435\u043D\u0430.",
     storageUsage: "\u0437\u0430\u043D\u044F\u0442\u043E \u043F\u0430\u043C\u044F\u0442\u0438 {used}/{total}mb",
     initializationFailed: "\u041E\u0448\u0438\u0431\u043A\u0430 \u0438\u043D\u0438\u0446\u0438\u0430\u043B\u0438\u0437\u0430\u0446\u0438\u0438: {error}"
@@ -179,10 +107,8 @@ var UI_TEXT = {
     start: "Start",
     stop: "Stop",
     allowMicrophoneAccess: "Allow microphone access",
-    settings: "Settings",
     sessions: "Sessions",
     input: "Mic-Speaker",
-    llm: "LLM",
     show: "Show",
     hide: "Hide",
     newSession: "New session",
@@ -194,16 +120,6 @@ var UI_TEXT = {
     sessionBase: "Session",
     applyToCurrentTab: "Apply to current tab",
     refreshDevices: "Refresh devices",
-    llmEndpoint: "LLM REST endpoint",
-    llmModel: "LLM model",
-    showLlmSettings: "Show LLM settings",
-    hideLlmSettings: "Hide LLM settings",
-    showLlmResponse: "Show LLM response",
-    hideLlmResponse: "Hide LLM response",
-    sendSessionToLlm: "Send session to LLM",
-    altHotkeys: "ALT hotkeys",
-    llmHotkeyHint: "You can also send using hotkeys: Alt+Z, Alt+X, Alt+C, Alt+V, Alt+B, Alt+N, Alt+M, Alt+<, Alt+>, Alt+?. Both left and right Alt work. Enable ALT hotkeys first.",
-    promptTemplate: "Prompt template",
     copy: "Copy",
     exportTxt: "Export .txt",
     clear: "Clear",
@@ -217,7 +133,6 @@ var UI_TEXT = {
     startingRecognition: "Starting speech recognition...",
     cannotApplyOutputDevice: "Cannot apply output device: {error}",
     cannotRefreshOutputDevices: "Cannot refresh output devices: {error}",
-    llmRequestFailed: "LLM request failed: {error}",
     switchingLanguage: "Switching language to {lang}...",
     failedReadOutputDevices: "Failed to read output devices.",
     outputDevicesLimitedByPermission: "Output list is limited: {error}. Allow microphone for this tab and refresh devices.",
@@ -243,16 +158,8 @@ var UI_TEXT = {
     noSpeechDetected: "No speech detected.",
     recognitionAborted: "Recognition aborted.",
     speechRecognitionError: "Speech recognition error: {code}",
-    setLlmEndpointFirst: "Set LLM endpoint first.",
-    setLlmModelFirst: "Set LLM model first.",
-    sessionTranscriptEmpty: "Session transcript is empty.",
-    sendingTranscriptToLlm: "Sending transcript to LLM...",
-    transcriptSentToLlm: "Transcript sent to LLM.",
-    emptyResponse: "(empty response)",
     appliedAndFailedDetails: " ({applied} applied, {failed} failed)",
     appliedElementsDetails: " ({applied} elements)",
-    meetingTranscriptPrefix: "Meeting transcript",
-    copiedPromptAndSession: "Prompt and session were copied to clipboard.",
     copiedSession: "Session was copied to clipboard.",
     storageUsage: "storage used {used}/{total}mb",
     initializationFailed: "Initialization failed: {error}"
@@ -265,8 +172,6 @@ var starting = false;
 var showGrantButton = false;
 var outputDevices = [];
 var applyingTabSink = false;
-var sendingToLlm = false;
-var llmHotkeyHintTimer = null;
 var recognitionIdleTimer = null;
 var lastRecognitionTextAt = 0;
 var silentRestartPending = false;
@@ -288,22 +193,14 @@ function applyInterfaceLanguage() {
   els.start.textContent = t("start");
   els.stop.textContent = t("stop");
   els.grantAccess.textContent = t("allowMicrophoneAccess");
-  els.settingsTitle.textContent = t("settings");
   els.sessionsTitle.textContent = t("sessions");
   els.inputTitle.textContent = t("input");
-  els.llmTitle.textContent = t("llm");
   els.newSession.textContent = t("newSession");
   els.deleteSession.textContent = t("deleteSession");
   els.langLabel.textContent = t("language");
   els.outputDeviceLabel.textContent = t("outputDevice");
   els.applyOutputDevice.textContent = t("applyToCurrentTab");
   els.refreshDevices.textContent = t("refreshDevices");
-  els.llmEndpointLabel.textContent = t("llmEndpoint");
-  els.llmModelLabel.textContent = t("llmModel");
-  els.promptLabel.textContent = t("promptTemplate");
-  els.sendToLlm.textContent = t("sendSessionToLlm");
-  els.altHotkeysLabel.textContent = t("altHotkeys");
-  els.llmHotkeyHint.textContent = t("llmHotkeyHint");
   els.copy.textContent = t("copy");
   els.exportTxt.textContent = t("exportTxt");
   els.clear.textContent = t("clear");
@@ -311,46 +208,10 @@ function applyInterfaceLanguage() {
   const enOpt = els.lang.querySelector('option[value="en-US"]');
   if (ruOpt) ruOpt.textContent = t("langRu");
   if (enOpt) enOpt.textContent = t("langEn");
-  updateSettingsVisibility();
   updateSessionsVisibility();
   updateControlsVisibility();
-  updateLlmVisibility();
-  updateLlmSettingsVisibility();
-  updateLlmResponseVisibility();
   renderOutputDevices();
   updateStorageUsage();
-}
-function clearLlmHotkeyHintTimer() {
-  if (llmHotkeyHintTimer === null) return;
-  clearTimeout(llmHotkeyHintTimer);
-  llmHotkeyHintTimer = null;
-}
-function hideLlmHotkeyHint() {
-  clearLlmHotkeyHintTimer();
-  els.llmHotkeyHint.hidden = true;
-}
-function scheduleLlmHotkeyHint() {
-  clearLlmHotkeyHintTimer();
-  llmHotkeyHintTimer = setTimeout(() => {
-    llmHotkeyHintTimer = null;
-    els.llmHotkeyHint.hidden = false;
-  }, LLM_HOTKEY_HINT_DELAY_MS);
-}
-function isSendToLlmHotkey(event) {
-  if (!state.altHotkeysEnabled) return false;
-  if (!event.altKey || event.metaKey || event.repeat) return false;
-  if (event.ctrlKey && !event.getModifierState?.("AltGraph")) return false;
-  return LLM_HOTKEY_CODES.has(event.code);
-}
-function handleSendToLlmHotkey(event) {
-  if (!isSendToLlmHotkey(event)) return;
-  event.preventDefault();
-  event.stopPropagation();
-  hideLlmHotkeyHint();
-  if (sendingToLlm) return;
-  sendSessionToLlm().catch((err) => {
-    setStatus("error", t("llmRequestFailed", { error: err?.message || String(err) }));
-  });
 }
 els.uiLang.addEventListener("change", () => {
   const next = els.uiLang.value === "en" ? "en" : "ru";
@@ -362,7 +223,6 @@ els.uiLang.addEventListener("change", () => {
     setStatus("idle", t("ready"));
   }
 });
-document.addEventListener("keydown", handleSendToLlmHotkey);
 els.start.addEventListener("click", () => {
   startListening();
 });
@@ -402,11 +262,6 @@ els.newSession.addEventListener("click", () => {
 els.deleteSession.addEventListener("click", () => {
   deleteActiveSession();
 });
-els.toggleSettings.addEventListener("click", () => {
-  state.settingsVisible = !state.settingsVisible;
-  persistState();
-  updateSettingsVisibility();
-});
 els.toggleSessions.addEventListener("click", () => {
   state.sessionsVisible = !state.sessionsVisible;
   persistState();
@@ -416,11 +271,6 @@ els.toggleControls.addEventListener("click", () => {
   state.controlsVisible = !state.controlsVisible;
   persistState();
   updateControlsVisibility();
-});
-els.toggleLlm.addEventListener("click", () => {
-  state.llmVisible = !state.llmVisible;
-  persistState();
-  updateLlmVisibility();
 });
 els.outputDevice.addEventListener("change", () => {
   state.outputSinkId = els.outputDevice.value;
@@ -441,47 +291,6 @@ els.refreshDevices.addEventListener("click", () => {
     setStatus("error", t("cannotRefreshOutputDevices", { error: err?.message || String(err) }));
   });
 });
-els.llmEndpoint.addEventListener("change", () => {
-  state.llmEndpoint = els.llmEndpoint.value.trim();
-  persistState();
-});
-els.llmModel.addEventListener("change", () => {
-  state.llmModel = els.llmModel.value.trim();
-  persistState();
-});
-els.togglePrompt.addEventListener("click", () => {
-  state.llmSettingsVisible = !state.llmSettingsVisible;
-  persistState();
-  updateLlmSettingsVisibility();
-});
-els.toggleLlmResponse.addEventListener("click", () => {
-  state.llmResponseVisible = !state.llmResponseVisible;
-  persistState();
-  updateLlmResponseVisibility();
-});
-els.altHotkeysToggle.addEventListener("change", () => {
-  state.altHotkeysEnabled = Boolean(els.altHotkeysToggle.checked);
-  persistState();
-});
-els.llmPrompt.addEventListener("change", () => {
-  state.llmPrompt = els.llmPrompt.value;
-  persistState();
-});
-els.sendToLlm.addEventListener("mouseenter", () => {
-  scheduleLlmHotkeyHint();
-});
-els.sendToLlm.addEventListener("mouseleave", () => {
-  hideLlmHotkeyHint();
-});
-els.sendToLlm.addEventListener("mousedown", () => {
-  hideLlmHotkeyHint();
-});
-els.sendToLlm.addEventListener("click", () => {
-  hideLlmHotkeyHint();
-  sendSessionToLlm().catch((err) => {
-    setStatus("error", t("llmRequestFailed", { error: err?.message || String(err) }));
-  });
-});
 navigator.mediaDevices?.addEventListener?.("devicechange", () => {
   refreshOutputDevices({ requestPermission: false }).catch(() => {
   });
@@ -498,12 +307,8 @@ function loadState() {
 function ensureStateShape() {
   const hadLayoutVersion = typeof state.layoutVersion === "number";
   if (!hadLayoutVersion) {
-    state.settingsVisible = false;
     state.sessionsVisible = true;
     state.controlsVisible = true;
-    state.llmVisible = false;
-    state.llmSettingsVisible = false;
-    state.llmResponseVisible = false;
     state.layoutVersion = LAYOUT_VERSION;
   } else if (state.layoutVersion < LAYOUT_VERSION) {
     state.layoutVersion = LAYOUT_VERSION;
@@ -513,22 +318,16 @@ function ensureStateShape() {
   state.lang = state.lang === "en-US" ? "en-US" : "ru-RU";
   state.outputSinkId = typeof state.outputSinkId === "string" ? state.outputSinkId : "";
   state.outputSinkLabel = typeof state.outputSinkLabel === "string" ? state.outputSinkLabel : "";
-  state.llmEndpoint = typeof state.llmEndpoint === "string" && state.llmEndpoint.trim() ? state.llmEndpoint.trim() : "http://localhost:1234/api/v1/chat";
-  state.llmModel = typeof state.llmModel === "string" ? state.llmModel.trim() : "";
-  state.llmPrompt = typeof state.llmPrompt === "string" && state.llmPrompt.trim() ? state.llmPrompt : DEFAULT_LLM_PROMPT;
-  if (state.llmPrompt.trim() === LEGACY_EN_PROMPT.trim() || state.llmPrompt.trim() === LEGACY_RU_PROMPT.trim() || state.llmPrompt.trim() === LEGACY_RU_PROMPT_NO_FINAL_DOT.trim()) {
-    state.llmPrompt = DEFAULT_LLM_PROMPT;
-  }
-  state.settingsVisible = typeof state.settingsVisible === "boolean" ? state.settingsVisible : false;
+  delete state.settingsVisible;
+  delete state.llmEndpoint;
+  delete state.llmModel;
+  delete state.llmPrompt;
+  delete state.llmVisible;
+  delete state.llmSettingsVisible;
+  delete state.llmResponseVisible;
+  delete state.altHotkeysEnabled;
   state.sessionsVisible = typeof state.sessionsVisible === "boolean" ? state.sessionsVisible : true;
   state.controlsVisible = typeof state.controlsVisible === "boolean" ? state.controlsVisible : true;
-  state.llmVisible = typeof state.llmVisible === "boolean" ? state.llmVisible : false;
-  state.llmSettingsVisible = typeof state.llmSettingsVisible === "boolean" ? state.llmSettingsVisible : false;
-  state.llmResponseVisible = typeof state.llmResponseVisible === "boolean" ? state.llmResponseVisible : false;
-  state.altHotkeysEnabled = typeof state.altHotkeysEnabled === "boolean" ? state.altHotkeysEnabled : false;
-  if (isLikelyMojibake(state.llmPrompt)) {
-    state.llmPrompt = DEFAULT_LLM_PROMPT;
-  }
   if (!state.sessions.length) {
     state.sessions.push(makeSession(`${t("sessionBase")} 1`));
   } else {
@@ -543,15 +342,6 @@ function ensureStateShape() {
     state.activeSessionId = state.sessions[0].id;
   }
   persistState();
-}
-function isLikelyMojibake(text) {
-  if (typeof text !== "string" || !text) return false;
-  const markers = ["\u0420\u040E\u0420", "\u0420\u045F\u0421", "\u0420\u0454\u0420", "\u0421\u201A\u0421", "\u0421\u040F", "\u0420\xB0", "\u0420\xB5"];
-  let hitCount = 0;
-  for (const marker of markers) {
-    if (text.includes(marker)) hitCount += 1;
-  }
-  return hitCount >= 3;
 }
 function persistState() {
   try {
@@ -1027,18 +817,7 @@ function syncButtons() {
   els.lang.disabled = starting;
   els.outputDevice.disabled = applyingTabSink;
   els.applyOutputDevice.disabled = applyingTabSink;
-  els.llmEndpoint.disabled = sendingToLlm;
-  els.llmModel.disabled = sendingToLlm;
-  els.sendToLlm.disabled = sendingToLlm;
-  els.llmPrompt.disabled = sendingToLlm;
-  els.togglePrompt.disabled = sendingToLlm;
-  els.toggleLlmResponse.disabled = sendingToLlm;
   els.grantAccess.hidden = !showGrantButton;
-}
-function updateSettingsVisibility() {
-  const visible = Boolean(state.settingsVisible);
-  els.settingsBody.hidden = !visible;
-  els.toggleSettings.textContent = visible ? t("hide") : t("show");
 }
 function updateSessionsVisibility() {
   const visible = Boolean(state.sessionsVisible);
@@ -1049,23 +828,6 @@ function updateControlsVisibility() {
   const visible = Boolean(state.controlsVisible);
   els.controlsBody.hidden = !visible;
   els.toggleControls.textContent = visible ? t("hide") : t("show");
-}
-function updateLlmVisibility() {
-  const visible = Boolean(state.llmVisible);
-  els.llmBody.hidden = !visible;
-  els.toggleLlm.textContent = visible ? t("hide") : t("show");
-}
-function updateLlmSettingsVisibility() {
-  const visible = Boolean(state.llmSettingsVisible);
-  els.endpointWrap.hidden = !visible;
-  els.modelWrap.hidden = !visible;
-  els.promptWrap.hidden = !visible;
-  els.togglePrompt.textContent = visible ? t("hideLlmSettings") : t("showLlmSettings");
-}
-function updateLlmResponseVisibility() {
-  const visible = Boolean(state.llmResponseVisible);
-  els.llmResponse.hidden = !visible;
-  els.toggleLlmResponse.textContent = visible ? t("hideLlmResponse") : t("showLlmResponse");
 }
 function nowTime() {
   const d = /* @__PURE__ */ new Date();
@@ -1095,61 +857,6 @@ function asText() {
   if (!session) return "";
   return session.lines.map((l) => `[${l.time}] ${l.text}`).join("\n");
 }
-async function sendSessionToLlm() {
-  const endpoint = (state.llmEndpoint || "").trim();
-  if (!endpoint) throw new Error(t("setLlmEndpointFirst"));
-  const model = (state.llmModel || "").trim();
-  if (!model) throw new Error(t("setLlmModelFirst"));
-  const transcript = asText().trim();
-  if (!transcript) throw new Error(t("sessionTranscriptEmpty"));
-  const prompt = (state.llmPrompt || DEFAULT_LLM_PROMPT).trim();
-  const input = `${t("meetingTranscriptPrefix")}:
-${transcript}`;
-  const payload = {
-    model,
-    system_prompt: prompt,
-    input,
-    store: false
-  };
-  sendingToLlm = true;
-  syncButtons();
-  setStatus("loading", t("sendingTranscriptToLlm"));
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const contentType = res.headers.get("content-type") || "";
-    const isJson = contentType.includes("application/json");
-    const body = isJson ? await res.json() : await res.text();
-    if (!res.ok) {
-      const msg = isJson ? JSON.stringify(body) : String(body);
-      throw new Error(`HTTP ${res.status}: ${msg.slice(0, 300)}`);
-    }
-    const text = isJson ? extractLlmText(body) : String(body);
-    els.llmResponse.textContent = text || t("emptyResponse");
-    setStatus("active", t("transcriptSentToLlm"));
-  } finally {
-    sendingToLlm = false;
-    syncButtons();
-  }
-}
-function extractLlmText(body) {
-  if (typeof body === "string") return body;
-  if (!body || typeof body !== "object") return String(body ?? "");
-  if (Array.isArray(body.output)) {
-    const messages = body.output.filter((item) => item && item.type === "message" && typeof item.content === "string").map((item) => item.content.trim()).filter(Boolean);
-    if (messages.length) return messages.join("\n\n");
-  }
-  if (typeof body.reply === "string") return body.reply;
-  if (typeof body.text === "string") return body.text;
-  if (typeof body.response === "string") return body.response;
-  if (typeof body.output_text === "string") return body.output_text;
-  const chat = body?.choices?.[0]?.message?.content;
-  if (typeof chat === "string") return chat;
-  return JSON.stringify(body, null, 2);
-}
 function setLanguage(lang) {
   if (lang !== "ru-RU" && lang !== "en-US") return;
   state.lang = lang;
@@ -1169,12 +876,6 @@ function setLanguage(lang) {
 async function boot() {
   els.uiLang.value = state.uiLang;
   els.lang.value = state.lang;
-  els.altHotkeysToggle.checked = Boolean(state.altHotkeysEnabled);
-  els.llmEndpoint.value = state.llmEndpoint || "";
-  els.llmModel.value = state.llmModel || "";
-  els.llmPrompt.value = state.llmPrompt || DEFAULT_LLM_PROMPT;
-  els.llmResponse.textContent = "";
-  hideLlmHotkeyHint();
   applyInterfaceLanguage();
   renderSessions();
   renderTranscript();

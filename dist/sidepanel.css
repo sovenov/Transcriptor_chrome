@@ -84,7 +84,7 @@ h1 {
   padding: 6px 8px;
 }
 
-.settings {
+.panel-controls {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -100,11 +100,6 @@ h1 {
   gap: 8px;
 }
 
-.section-title {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 .section-body {
   display: flex;
   flex-direction: column;
@@ -112,7 +107,7 @@ h1 {
   min-width: 0;
 }
 
-.settings-group {
+.panel-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -121,12 +116,12 @@ h1 {
   border-top: 1px solid var(--border);
 }
 
-.settings-group:first-child {
+.panel-group:first-child {
   padding-top: 0;
   border-top: none;
 }
 
-.settings-subtitle {
+.panel-subtitle {
   font-size: 11px;
   color: var(--muted);
 }
@@ -190,34 +185,6 @@ select {
   max-width: 100%;
 }
 
-input[type="url"],
-input[type="text"] {
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 13px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
-textarea {
-  background: var(--panel);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px;
-  font-size: 12px;
-  line-height: 1.4;
-  resize: vertical;
-  min-height: 120px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-
 .control-row {
   display: flex;
   align-items: center;
@@ -227,63 +194,6 @@ textarea {
 }
 
 .control-row > * {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.llm-send-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.llm-hotkey-hint {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  width: min(320px, 90vw);
-  padding: 7px 9px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: #15161c;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
-  white-space: normal;
-  text-align: left;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-}
-
-.inline-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted);
-  user-select: none;
-  cursor: pointer;
-}
-
-.inline-check input[type="checkbox"] {
-  margin: 0;
-  accent-color: var(--accent);
-}
-
-.llm-response {
-  margin: 0;
-  max-height: 120px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--panel);
-  padding: 8px;
   min-width: 0;
   max-width: 100%;
 }
